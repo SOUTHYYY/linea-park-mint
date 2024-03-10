@@ -1,5 +1,5 @@
 // Infura RPC Api Key
-export const InfuraApiKey = 'c066452a9754451c8ef08cba30ace5aa';
+export const InfuraApiKey = '';
 
 // Приватный ключ, начинающийся с 0x
 export const PrivateKey = '';
