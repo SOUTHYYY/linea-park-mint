@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Contract, Transaction, Web3, Web3BaseWalletAccount } from 'web3';
-import { InfuraApiKey, Networks, PrivateKey } from './contants.js';
+import {
+  ATTEMPS_COUNT,
+  InfuraApiKey,
+  Networks,
+  PrivateKey,
+} from './contants.js';
 import {
   LineaParkActionAndStrategy,
   LineaParkMmoAndRpg,
@@ -28,62 +33,58 @@ const makeTransaction = async (
     questUrl,
   } = contractData;
 
-  try {
-    const txCount = await w3.eth.getTransactionCount(account.address);
-    const txValue = value ? w3.utils.toWei(value, 'ether') : undefined;
-    const gasPrice = (await getGasPrice(Networks.LINEA_MAINNET))
-      .toFixed(9)
-      .toString();
+  const txCount = await w3.eth.getTransactionCount(account.address);
+  const txValue = value ? w3.utils.toWei(value, 'ether') : undefined;
+  const gasPrice = (await getGasPrice(Networks.LINEA_MAINNET))
+    .toFixed(9)
+    .toString();
 
-    const callParams =
-      typeof params === 'function' ? await params(contractData) : [...params];
+  const callParams =
+    typeof params === 'function' ? await params(contractData) : [...params];
 
-    let tx: Transaction = {
-      nonce: w3.utils.toHex(txCount),
-      from: account.address,
-      value: txValue,
+  let tx: Transaction = {
+    nonce: w3.utils.toHex(txCount),
+    from: account.address,
+    value: txValue,
+  };
+
+  if (proxyAbi && proxyAddress) {
+    const contract = new Contract(abi, contractAddress);
+    const data = contract.methods[method](...callParams).encodeABI();
+
+    tx = {
+      ...tx,
+      to: proxyAddress,
+      data: data,
     };
-
-    if (proxyAbi && proxyAddress) {
-      const contract = new Contract(abi, contractAddress);
-      const data = contract.methods[method](...callParams).encodeABI();
-
-      tx = {
-        ...tx,
-        to: proxyAddress,
-        data: data,
-      };
-    } else if (method === 'transfer') {
-      // Just sending ETH to address
-      tx = {
-        ...tx,
-        to: contractAddress,
-      };
-    } else {
-      const contract = new Contract(abi, contractAddress);
-      const data = contract.methods[method](...callParams).encodeABI();
-      tx = {
-        ...tx,
-        to: contractAddress,
-        data,
-      };
-    }
-
-    const gasLimit = await getGasLimit(tx);
-    tx.maxFeePerGas = w3.utils.toWei(gasPrice, 'Gwei');
-    tx.maxPriorityFeePerGas = w3.utils.toWei(gasPrice, 'Gwei');
-    tx.gas = gasLimit;
-
-    if (questName && questUrl) {
-      console.log(`🗂️  ${questName} [${questUrl}]`);
-    }
-
-    const { transactionHash } = await w3.eth.sendTransaction(tx);
-
-    console.log(`✅ Tx hash: https://lineascan.build/tx/${transactionHash}`);
-  } catch (err) {
-    console.log(`❌ Error while sending TX: ${err.message}`);
+  } else if (method === 'transfer') {
+    // Just sending ETH to address
+    tx = {
+      ...tx,
+      to: contractAddress,
+    };
+  } else {
+    const contract = new Contract(abi, contractAddress);
+    const data = contract.methods[method](...callParams).encodeABI();
+    tx = {
+      ...tx,
+      to: contractAddress,
+      data,
+    };
   }
+
+  const gasLimit = await getGasLimit(tx);
+  tx.maxFeePerGas = w3.utils.toWei(gasPrice, 'Gwei');
+  tx.maxPriorityFeePerGas = w3.utils.toWei(gasPrice, 'Gwei');
+  tx.gas = gasLimit;
+
+  if (questName && questUrl) {
+    console.log(`🗂️  ${questName} [${questUrl}]`);
+  }
+
+  const { transactionHash } = await w3.eth.sendTransaction(tx);
+
+  console.log(`✅ Tx hash: https://lineascan.build/tx/${transactionHash}`);
 };
 
 const main = async (): Promise<void> => {
@@ -104,6 +105,7 @@ const main = async (): Promise<void> => {
     0,
     tasks,
     async (data: ContractData) => await makeTransaction(data, account, w3),
+    ATTEMPS_COUNT,
   );
 
   return;

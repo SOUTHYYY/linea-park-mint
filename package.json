@@ -1,6 +1,6 @@
 {
   "name": "linea-park-mint",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "engines": {
     "node": ">= 20.9 < 21"

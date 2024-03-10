@@ -3775,28 +3775,6 @@ export const LineaParkSocialWorld: Readonly<ContractData[]> = [
   },
   {
     questUrl: 'https://layer3.xyz/quests/linea-bitavatar',
-    questName: 'BitAvatar Main Quest',
-    address: '0x37d4bfc8c583d297a0740d734b271eac9a88ade4',
-    method: 'mint',
-    abi: [
-      {
-        inputs: [{ internalType: 'string', name: 'tokenURI', type: 'string' }],
-        name: 'mint',
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
-      },
-    ],
-    params: () => {
-      let avatarId: string = '';
-      for (let i = 0; i < 24; i++) {
-        avatarId += Math.floor(Math.random() * 16).toString(16);
-      }
-      return [`https://api.bitavatar.io/v1/avatar/${avatarId}`];
-    },
-  },
-  {
-    questUrl: 'https://layer3.xyz/quests/linea-bitavatar',
     questName: 'BitAvatar Additional Quest',
     address: '0x37d4bfc8c583d297a0740d734b271eac9a88ade4',
     method: 'checkIn',
