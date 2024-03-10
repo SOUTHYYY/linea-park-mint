@@ -1,34 +1,111 @@
-/**
- * Some predefined delay values (in milliseconds).
- */
-export enum Delays {
-  Short = 500,
-  Medium = 2000,
-  Long = 5000,
-}
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Contract, Transaction, Web3, Web3BaseWalletAccount } from 'web3';
+import { InfuraApiKey, Networks, PrivateKey } from './contants.js';
+import {
+  LineaParkActionAndStrategy,
+  LineaParkMmoAndRpg,
+  LineaParkSocialWorld,
+} from './Modules/LineaPark.js';
+import { getGasLimit } from './Utils/getGasLimit.js';
+import { getGasPrice } from './Utils/getGasPrice.js';
+import type { ContractData } from './Interfaces/ContractData.js';
+import { doActionsWithCallNext } from './Utils/doActionWithCallNext.js';
 
-/**
- * Returns a Promise<string> that resolves after a given time.
- *
- * @param {string} name - A name.
- * @param {number=} [delay=Delays.Medium] - A number of milliseconds to delay resolution of the Promise.
- * @returns {Promise<string>}
- */
-function delayedHello(
-  name: string,
-  delay: number = Delays.Medium,
-): Promise<string> {
-  return new Promise((resolve: (value?: string) => void) =>
-    setTimeout(() => resolve(`Hello, ${name}`), delay),
+const makeTransaction = async (
+  contractData: ContractData,
+  account: Web3BaseWalletAccount,
+  w3: Web3,
+) => {
+  const {
+    method,
+    abi,
+    address: contractAddress,
+    params,
+    value,
+    proxyAbi,
+    proxyAddress,
+    questName,
+    questUrl,
+  } = contractData;
+
+  try {
+    const txCount = await w3.eth.getTransactionCount(account.address);
+    const txValue = value ? w3.utils.toWei(value, 'ether') : undefined;
+    const gasPrice = (await getGasPrice(Networks.LINEA_MAINNET))
+      .toFixed(9)
+      .toString();
+
+    const callParams =
+      typeof params === 'function' ? await params(contractData) : [...params];
+
+    let tx: Transaction = {
+      nonce: w3.utils.toHex(txCount),
+      from: account.address,
+      value: txValue,
+    };
+
+    if (proxyAbi && proxyAddress) {
+      const contract = new Contract(abi, contractAddress);
+      const data = contract.methods[method](...callParams).encodeABI();
+
+      tx = {
+        ...tx,
+        to: proxyAddress,
+        data: data,
+      };
+    } else if (method === 'transfer') {
+      // Just sending ETH to address
+      tx = {
+        ...tx,
+        to: contractAddress,
+      };
+    } else {
+      const contract = new Contract(abi, contractAddress);
+      const data = contract.methods[method](...callParams).encodeABI();
+      tx = {
+        ...tx,
+        to: contractAddress,
+        data,
+      };
+    }
+
+    const gasLimit = await getGasLimit(tx);
+    tx.maxFeePerGas = w3.utils.toWei(gasPrice, 'Gwei');
+    tx.maxPriorityFeePerGas = w3.utils.toWei(gasPrice, 'Gwei');
+    tx.gas = gasLimit;
+
+    if (questName && questUrl) {
+      console.log(`🗂️  ${questName} [${questUrl}]`);
+    }
+
+    const { transactionHash } = await w3.eth.sendTransaction(tx);
+
+    console.log(`✅ Tx hash: https://lineascan.build/tx/${transactionHash}`);
+  } catch (err) {
+    console.log(`❌ Error while sending TX: ${err.message}`);
+  }
+};
+
+const main = async (): Promise<void> => {
+  const url = `wss://${Networks.LINEA_MAINNET}.infura.io/ws/v3/${InfuraApiKey}`;
+  const provider = new Web3.providers.WebsocketProvider(url);
+  console.log(`Is support subscriptions? ${provider.supportsSubscriptions()}`);
+  const w3 = new Web3();
+  w3.setProvider(provider);
+
+  const tasks = [
+    ...LineaParkMmoAndRpg,
+    ...LineaParkActionAndStrategy,
+    ...LineaParkSocialWorld,
+  ];
+
+  const account = w3.eth.accounts.wallet.add(PrivateKey).get(0);
+  await doActionsWithCallNext<ContractData>(
+    0,
+    tasks,
+    async (data: ContractData) => await makeTransaction(data, account, w3),
   );
-}
 
-// Please see the comment in the .eslintrc.json file about the suppressed rule!
-// Below is an example of how to use ESLint errors suppression. You can read more
-// at https://eslint.org/docs/latest/user-guide/configuring/rules#disabling-rules
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export async function greeter(name: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-  // The name parameter should be of type string. Any is used only to trigger the rule.
-  return await delayedHello(name, Delays.Long);
-}
+  return;
+};
+main();
