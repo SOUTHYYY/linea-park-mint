@@ -11,5 +11,7 @@ export interface ContractData {
   proxyAbi?: AbiItem[];
   proxyAddress?: string;
   params?: ParamsCallback | unknown[];
+  // Specify data for those contracts where we cannot decode ABI and all contracts send the same data.
+  data?: string;
   value?: number;
 }

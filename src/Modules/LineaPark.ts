@@ -3120,6 +3120,16 @@ export const LineaParkActionAndStrategy: Readonly<ContractData[]> = [
       ];
     },
   },
+  {
+    questUrl: 'https://layer3.xyz/quests/linea-yooldo',
+    questName: 'Yooldo: Trouble Punk',
+    address: '0x63ce21bd9af8cc603322cb025f26db567de8102b',
+    value: 0.000002,
+    abi: [],
+    method: '',
+    params: [],
+    data: '0xfb89f3b1',
+  },
 ];
 
 export const LineaParkSocialWorld: Readonly<ContractData[]> = [

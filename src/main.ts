@@ -31,6 +31,7 @@ const makeTransaction = async (
     proxyAddress,
     questName,
     questUrl,
+    data: contactData,
   } = contractData;
 
   const txCount = await w3.eth.getTransactionCount(account.address);
@@ -50,7 +51,9 @@ const makeTransaction = async (
 
   if (proxyAbi && proxyAddress) {
     const contract = new Contract(abi, contractAddress);
-    const data = contract.methods[method](...callParams).encodeABI();
+    const data = contactData
+      ? contactData
+      : contract.methods[method](...callParams).encodeABI();
 
     tx = {
       ...tx,
@@ -65,7 +68,9 @@ const makeTransaction = async (
     };
   } else {
     const contract = new Contract(abi, contractAddress);
-    const data = contract.methods[method](...callParams).encodeABI();
+    const data = contactData
+      ? contactData
+      : contract.methods[method](...callParams).encodeABI();
     tx = {
       ...tx,
       to: contractAddress,

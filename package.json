@@ -1,6 +1,6 @@
 {
   "name": "linea-park-mint",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "engines": {
     "node": ">= 20.9 < 21"
@@ -21,7 +21,7 @@
     "typescript": "~5.3"
   },
   "scripts": {
-    "start": "node build/src/main.js",
+    "start": "yarn clean && yarn build && node build/src/main.js",
     "clean": "rimraf coverage build tmp",
     "prebuild": "npm run lint",
     "build": "tsc -p tsconfig.json",
